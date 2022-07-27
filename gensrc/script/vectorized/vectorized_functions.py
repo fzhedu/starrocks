@@ -744,4 +744,8 @@ vectorized_functions = [
 
     # reserve 150281
     [150282, 'array_contains_all', 'BOOLEAN', ['ANY_ARRAY', 'ANY_ARRAY'], 'ArrayFunctions::array_contains_all'],
+
+    [160100, 'transform','ANY_ARRAY',['ANY_ARRAY'],'ArrayFunctions::transform'],
+    [160101, 'transform','ANY_ARRAY',['ANY_ARRAY','ANY_ELEMENT'],'ArrayFunctions::transform'],
+    [160102, 'lambda','INT',['ANY_ELEMENT'],'ArrayFunctions::lambda'],
 ]

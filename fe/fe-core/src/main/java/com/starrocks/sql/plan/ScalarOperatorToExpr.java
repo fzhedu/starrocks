@@ -35,6 +35,7 @@ import com.starrocks.analysis.SlotDescriptor;
 import com.starrocks.analysis.SlotId;
 import com.starrocks.analysis.SlotRef;
 import com.starrocks.analysis.StringLiteral;
+import com.starrocks.analysis.TableName;
 import com.starrocks.catalog.Function;
 import com.starrocks.catalog.Type;
 import com.starrocks.sql.optimizer.operator.scalar.ArrayElementOperator;
@@ -120,6 +121,12 @@ public class ScalarOperatorToExpr {
                 Expr expr = buildExpr.build(context.projectOperatorMap.get(node), context);
                 context.colRefToExpr.put(node, expr);
                 return expr;
+            }
+
+            if (node.getName() == "lambda") {
+                Expr col = new SlotRef(new TableName("lambda", "lambda"), "lambda");
+                col.setType(Type.INT);
+                return col;
             }
 
             Preconditions.checkState(context.colRefToExpr.containsKey(node));
@@ -301,9 +308,9 @@ public class ScalarOperatorToExpr {
         }
 
         static Function isNullFN = new Function(new FunctionName("is_null_pred"),
-                new Type[] {Type.INVALID}, Type.BOOLEAN, false);
+                new Type[]{Type.INVALID}, Type.BOOLEAN, false);
         static Function isNotNullFN = new Function(new FunctionName("is_not_null_pred"),
-                new Type[] {Type.INVALID}, Type.BOOLEAN, false);
+                new Type[]{Type.INVALID}, Type.BOOLEAN, false);
 
         {
             isNullFN.setBinaryType(TFunctionBinaryType.BUILTIN);
@@ -337,7 +344,7 @@ public class ScalarOperatorToExpr {
                 expr = new LikePredicate(LikePredicate.Operator.LIKE, child1, child2);
             }
 
-            expr.setFn(Expr.getBuiltinFunction(expr.getOp().name(), new Type[] {child1.getType(), child2.getType()},
+            expr.setFn(Expr.getBuiltinFunction(expr.getOp().name(), new Type[]{child1.getType(), child2.getType()},
                     Function.CompareMode.IS_NONSTRICT_SUPERTYPE_OF));
 
             expr.setType(Type.BOOLEAN);

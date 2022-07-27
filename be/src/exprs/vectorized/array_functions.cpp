@@ -959,6 +959,14 @@ ColumnPtr ArrayFunctions::array_contains_all([[maybe_unused]] FunctionContext* c
     return ArrayHasImpl<false>::evaluate(*arg0, *arg1);
 }
 
+ColumnPtr ArrayFunctions::transform([[maybe_unused]] FunctionContext* context, const Columns& columns) {
+    return columns[0];
+}
+
+ColumnPtr ArrayFunctions::lambda(starrocks_udf::FunctionContext* context, const Columns& columns){
+    return columns[0];
+}
+
 class ArrayArithmeticImpl {
 public:
     using ArithmeticType = typename ArrayFunctions::ArithmeticType;

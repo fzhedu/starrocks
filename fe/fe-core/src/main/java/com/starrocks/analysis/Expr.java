@@ -982,6 +982,10 @@ abstract public class Expr extends TreeNode<Expr> implements ParseNode, Cloneabl
         return this instanceof LiteralExpr;
     }
 
+    public boolean isLambdaArg() {
+        return this instanceof LambdaArgument;
+    }
+
     /**
      * Returns true if this expression should be treated as constant. I.e. if the frontend
      * and backend should assume that two evaluations of the expression within a query will

@@ -3,8 +3,11 @@ package com.starrocks.sql.analyzer;
 
 import com.google.common.collect.Maps;
 import com.starrocks.analysis.SlotRef;
+import com.starrocks.analysis.TableName;
+import com.starrocks.catalog.Type;
 import com.starrocks.sql.ast.CTERelation;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,9 +22,27 @@ public class Scope {
     private final RelationFields relationFields;
     private final Map<String, CTERelation> cteQueries = Maps.newLinkedHashMap();
 
+    private Map<String, Type> lambdaArgs = null;
     public Scope(RelationId relationId, RelationFields relation) {
         this.relationId = relationId;
         this.relationFields = relation;
+    }
+
+    public void cleanLambdaArgs() {
+        if (lambdaArgs != null) {
+            lambdaArgs.clear();
+        }
+    }
+
+    public boolean hasLambda() {
+        return lambdaArgs != null && !lambdaArgs.isEmpty();
+    }
+
+    public void putLambdaArg(String name, Type type) {
+        if (lambdaArgs == null) {
+            lambdaArgs = new HashMap<String, Type>();
+        }
+        lambdaArgs.put(name, type);
     }
 
     public RelationId getRelationId() {
@@ -43,7 +64,13 @@ public class Scope {
     public ResolvedField resolveField(SlotRef expression, RelationId outerRelationId) {
         Optional<ResolvedField> resolvedField = resolveField(expression, 0, outerRelationId);
         if (!resolvedField.isPresent()) {
-            throw new SemanticException("Column '%s' cannot be resolved", expression.toSql());
+            if (lambdaArgs.containsKey(expression.getColumnName())) {
+                return new ResolvedField(this,
+                        new Field(expression.getColumnName(), lambdaArgs.get(expression.getColumnName()),
+                                new TableName("lambda", "lambda"), expression, false), 10);
+            } else {
+                throw new SemanticException("Column '%s' cannot be resolved", expression.toSql());
+            }
         }
         return resolvedField.get();
     }

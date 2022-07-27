@@ -26,6 +26,8 @@ import com.starrocks.analysis.InPredicate;
 import com.starrocks.analysis.InformationFunction;
 import com.starrocks.analysis.IntLiteral;
 import com.starrocks.analysis.IsNullPredicate;
+import com.starrocks.analysis.LambdaArgument;
+import com.starrocks.analysis.LambdaExpr;
 import com.starrocks.analysis.LargeIntLiteral;
 import com.starrocks.analysis.LikePredicate;
 import com.starrocks.analysis.LiteralExpr;
@@ -119,7 +121,11 @@ public class ExpressionAnalyzer {
             ResolvedField resolvedField = scope.resolveField(node);
             node.setType(resolvedField.getField().getType());
             node.setTblName(resolvedField.getField().getRelationAlias());
-            handleResolvedField(node, resolvedField);
+            if (scope.hasLambda()) {
+                analyzeState.addColumnReference(node, new FieldId(scope.getRelationId(), 1000));
+            } else {
+                handleResolvedField(node, resolvedField);
+            }
             return null;
         }
 
@@ -208,6 +214,27 @@ public class ExpressionAnalyzer {
                         "-> operator could only be used for json column, but got " + item.getType());
             }
             node.setType(Type.JSON);
+            return null;
+        }
+
+        @Override
+        public Void visitLambdaExpr(LambdaExpr node, Scope scope) {
+            Expr parameter = node.getChild(0);
+            Expr body = node.getChild(1);
+            if (!parameter.isLambdaArg()) {
+                throw new SemanticException("left operand of -> should be lambda args, but got " + parameter);
+            }
+            Type[] args = {body.getType()};
+            Function fn = Expr.getBuiltinFunction("lambda", args, Function.CompareMode.IS_NONSTRICT_SUPERTYPE_OF);
+            node.setFn(fn);
+            node.setType(fn.getReturnType());
+            scope.cleanLambdaArgs();
+            return null;
+        }
+
+        @Override
+        public Void visitLambdaArgument(LambdaArgument node, Scope scope) {
+            scope.putLambdaArg(node.getName(), node.getType());
             return null;
         }
 

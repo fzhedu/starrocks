@@ -368,9 +368,16 @@ public class FunctionSet {
     public static final String DEFAULT_VALUE = "default_value";
     public static final String REPLACE_VALUE = "replace_value";
 
+    public static final String LAMBDA = "lambda";
+
+    public static final String TRANSFORM = "transform";
+
     // JSON functions
     public static final Function JSON_QUERY_FUNC = new Function(
             new FunctionName(JSON_QUERY), new Type[] {Type.JSON, Type.VARCHAR}, Type.JSON, false);
+
+    public static final Function LAMBDA_FUNC = new Function(
+            new FunctionName(LAMBDA), new Type[] {Type.INT}, Type.INT, false);
 
     private static final Logger LOGGER = LogManager.getLogger(FunctionSet.class);
 

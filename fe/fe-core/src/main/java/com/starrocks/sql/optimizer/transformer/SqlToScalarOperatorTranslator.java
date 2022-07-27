@@ -23,6 +23,7 @@ import com.starrocks.analysis.GroupingFunctionCallExpr;
 import com.starrocks.analysis.InPredicate;
 import com.starrocks.analysis.InformationFunction;
 import com.starrocks.analysis.IsNullPredicate;
+import com.starrocks.analysis.LambdaExpr;
 import com.starrocks.analysis.LikePredicate;
 import com.starrocks.analysis.LiteralExpr;
 import com.starrocks.analysis.NullLiteral;
@@ -175,6 +176,9 @@ public final class SqlToScalarOperatorTranslator {
 
         @Override
         public ScalarOperator visitSlot(SlotRef node, Void context) {
+            if (node.getTblNameWithoutAnalyzed().getTbl() == "lambda") {
+                return new ColumnRefOperator(10, Type.INT, "lambda", true);
+            }
             ResolvedField resolvedField =
                     expressionMapping.getScope().resolveField(node, expressionMapping.getOuterScopeRelationId());
 
@@ -234,6 +238,19 @@ public final class SqlToScalarOperatorTranslator {
                     arguments,
                     func);
         }
+
+        @Override
+        public ScalarOperator visitLambdaExpr(LambdaExpr node, Void context) {
+            Preconditions.checkArgument(node.getChildren().size() == 2);
+            // which fn?
+            ScalarOperator arg = visit(node.getChild(1));
+            return new CallOperator(
+                    FunctionSet.LAMBDA,
+                    arg.getType(),
+                    Lists.newArrayList(arg),
+                    node.getFn());
+        }
+
 
         @Override
         public ScalarOperator visitCompoundPredicate(CompoundPredicate node, Void context) {

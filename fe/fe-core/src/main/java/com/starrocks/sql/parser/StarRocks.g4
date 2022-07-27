@@ -700,10 +700,11 @@ primaryExpression
     | value=primaryExpression '[' index=valueExpression ']'                               #arraySubscript
     | primaryExpression '[' start=INTEGER_VALUE? ':' end=INTEGER_VALUE? ']'               #arraySlice
     | primaryExpression ARROW string                                                      #arrowExpression
+    | identifier '->' expression                                                          #lambdaExpression
     ;
 
 literalExpression
-    : NULL                                                                                #nullLiteral
+    : NULL                                                                                  #nullLiteral
     | booleanValue                                                                        #booleanLiteral
     | number                                                                              #numericLiteral
     | (DATE | DATETIME) string                                                            #dateLiteral

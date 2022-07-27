@@ -72,6 +72,8 @@ import com.starrocks.analysis.IntLiteral;
 import com.starrocks.analysis.IsNullPredicate;
 import com.starrocks.analysis.JoinOperator;
 import com.starrocks.analysis.KeysDesc;
+import com.starrocks.analysis.LambdaArgument;
+import com.starrocks.analysis.LambdaExpr;
 import com.starrocks.analysis.LargeIntLiteral;
 import com.starrocks.analysis.LikePredicate;
 import com.starrocks.analysis.LimitElement;
@@ -2479,6 +2481,13 @@ public class AstBuilder extends StarRocksBaseVisitor<ParseNode> {
         StringLiteral stringLiteral = (StringLiteral) visit(context.string());
 
         return new ArrowExpr(expr, stringLiteral);
+    }
+
+    @Override
+    public ParseNode visitLambdaExpression(StarRocksParser.LambdaExpressionContext context) {
+        LambdaArgument argument = new LambdaArgument(((Identifier) visit(context.identifier())).getValue());
+        Expr expr = (Expr) visit(context.expression());
+        return new LambdaExpr(argument, expr);
     }
 
     @Override

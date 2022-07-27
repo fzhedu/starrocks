@@ -52,6 +52,9 @@ public class Statistics {
     }
 
     public ColumnStatistic getColumnStatistic(ColumnRefOperator column) {
+        if (column.getName() == "lambda") {
+            return new ColumnStatistic(1, 1, 1, 1, 1);
+        }
         ColumnStatistic result = columnStatistics.get(column);
         Preconditions.checkState(result != null);
         return result;

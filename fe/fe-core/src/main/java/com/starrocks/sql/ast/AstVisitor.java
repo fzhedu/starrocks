@@ -48,6 +48,8 @@ import com.starrocks.analysis.InPredicate;
 import com.starrocks.analysis.InformationFunction;
 import com.starrocks.analysis.InsertStmt;
 import com.starrocks.analysis.IsNullPredicate;
+import com.starrocks.analysis.LambdaArgument;
+import com.starrocks.analysis.LambdaExpr;
 import com.starrocks.analysis.LikePredicate;
 import com.starrocks.analysis.LimitElement;
 import com.starrocks.analysis.LiteralExpr;
@@ -405,6 +407,14 @@ public abstract class AstVisitor<R, C> {
     }
 
     public R visitArrowExpr(ArrowExpr node, C context) {
+        return visitExpression(node, context);
+    }
+
+    public R visitLambdaExpr(LambdaExpr node, C context) {
+        return visitExpression(node, context);
+    }
+
+    public R visitLambdaArgument(LambdaArgument node, C context) {
         return visitExpression(node, context);
     }
 
