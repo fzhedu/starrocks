@@ -177,7 +177,7 @@ public final class SqlToScalarOperatorTranslator {
         @Override
         public ScalarOperator visitSlot(SlotRef node, Void context) {
             if (node.getTblNameWithoutAnalyzed().getTbl() == "lambda") {
-                return new ColumnRefOperator(10, Type.INT, "lambda", true);
+                return new ColumnRefOperator(10, Type.TINYINT, "lambda", true);
             }
             ResolvedField resolvedField =
                     expressionMapping.getScope().resolveField(node, expressionMapping.getOuterScopeRelationId());
@@ -246,7 +246,7 @@ public final class SqlToScalarOperatorTranslator {
             ScalarOperator arg = visit(node.getChild(1));
             return new CallOperator(
                     FunctionSet.LAMBDA,
-                    arg.getType(),
+                    Type.FUNCTION,
                     Lists.newArrayList(arg),
                     node.getFn());
         }

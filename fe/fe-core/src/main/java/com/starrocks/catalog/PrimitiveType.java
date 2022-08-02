@@ -65,7 +65,7 @@ public enum PrimitiveType {
     DECIMAL128("DECIMAL128", 16, TPrimitiveType.DECIMAL128),
 
     JSON("JSON", 16, TPrimitiveType.JSON),
-
+    FUNCTION("FUNCTION", 8, TPrimitiveType.FUNCTION),
     // Unsupported scalar types.
     BINARY("BINARY", -1, TPrimitiveType.BINARY);
 
@@ -99,7 +99,7 @@ public enum PrimitiveType {
                     .build();
     // TODO(mofei) support them
     public static final ImmutableList<PrimitiveType> JSON_UNCOMPATIBLE_TYPE =
-            ImmutableList.of(DATE, DATETIME, TIME, HLL, BITMAP, PERCENTILE);
+            ImmutableList.of(DATE, DATETIME, TIME, HLL, BITMAP, PERCENTILE, FUNCTION);
 
     private static final ImmutableList<PrimitiveType> TIME_TYPE_LIST =
             ImmutableList.of(TIME, DATE, DATETIME);
@@ -168,6 +168,8 @@ public enum PrimitiveType {
         // JSON
         builder.putAll(JSON, JSON);
         builder.putAll(JSON, NULL_TYPE);
+
+        builder.putAll(FUNCTION, FUNCTION);
 
         for (PrimitiveType type : JSON_COMPATIBLE_TYPE) {
             builder.put(type, JSON);
@@ -246,6 +248,8 @@ public enum PrimitiveType {
                 return BINARY;
             case JSON:
                 return JSON;
+            case FUNCTION:
+                return FUNCTION;
             default:
                 return INVALID_TYPE;
         }
@@ -352,6 +356,7 @@ public enum PrimitiveType {
         switch (this) {
             case INVALID_TYPE:
             case BINARY:
+            case FUNCTION:
                 break;
             case NULL_TYPE:
             case BOOLEAN:
@@ -448,6 +453,10 @@ public enum PrimitiveType {
 
     public boolean isJsonType() {
         return this == JSON;
+    }
+
+    public boolean isFunctionType() {
+        return this == FUNCTION;
     }
 
     public boolean isCharFamily() {

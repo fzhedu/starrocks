@@ -2,6 +2,7 @@
 
 #include "exprs/vectorized/column_ref.h"
 
+#include "column/array_column.h"
 #include "column/chunk.h"
 #include "exprs/expr.h"
 
@@ -41,8 +42,26 @@ ColumnPtr ColumnRef::evaluate(ExprContext* context, Chunk* ptr) {
 
 vectorized::ColumnPtr& ColumnRef::get_column(Expr* expr, vectorized::Chunk* chunk) {
     ColumnRef* ref = (ColumnRef*)expr;
-    ColumnPtr& column = (chunk)->get_column_by_slot_id(ref->slot_id());
-    return column;
+    if (chunk->is_slot_exist(ref->slot_id())) {
+        ColumnPtr& column = (chunk)->get_column_by_slot_id(ref->slot_id());
+        return column;
+    } else if (chunk->is_slot_exist(111)) {
+        ColumnPtr& column = (chunk)->get_column_by_slot_id(111);
+        auto str = column->debug_string() + "  name : " +  column->get_name();       
+        DCHECK(str.size() > 0);
+        
+        return column;
+    } else {
+        ColumnPtr& column = (chunk)->get_column_by_index(0);
+        auto str = column->get_name();
+        DCHECK(str.size() > 0);
+        auto array_ptr = std::dynamic_pointer_cast<ArrayColumn>(column);
+        if (array_ptr != nullptr) {
+            return array_ptr->elements_column();
+        } else {
+            return column;
+        }
+    }
 }
 
 } // namespace starrocks::vectorized

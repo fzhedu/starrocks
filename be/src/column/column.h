@@ -79,6 +79,8 @@ public:
     virtual bool is_object() const { return false; }
 
     virtual bool is_array() const { return false; }
+    
+    virtual bool is_function() const { return false; }
 
     virtual bool low_cardinality() const { return false; }
 

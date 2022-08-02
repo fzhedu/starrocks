@@ -19,7 +19,7 @@ public class LambdaArgument extends Expr {
         return type;
     }
 
-    Type type = Type.INT;
+    Type type = Type.TINYINT;
     public LambdaArgument(String name_) {
         name = name_;
     }

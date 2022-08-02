@@ -101,6 +101,7 @@ public abstract class Type implements Cloneable {
     public static final ScalarType BITMAP = new ScalarType(PrimitiveType.BITMAP);
     public static final ScalarType PERCENTILE = new ScalarType(PrimitiveType.PERCENTILE);
     public static final ScalarType JSON = new ScalarType(PrimitiveType.JSON);
+    public static final ScalarType FUNCTION = new ScalarType(PrimitiveType.FUNCTION);
 
     public static final PseudoType ANY_ELEMENT = PseudoType.ANY_ELEMENT;
     public static final PseudoType ANY_ARRAY = PseudoType.ANY_ARRAY;
@@ -149,6 +150,7 @@ public abstract class Type implements Cloneable {
                     .add(DECIMAL64)
                     .add(DECIMAL128)
                     .add(JSON)
+                    .add(FUNCTION)
                     .build();
 
     protected static final ImmutableList<Type> SUPPORT_SCALAR_TYPE_LIST =
@@ -485,6 +487,9 @@ public abstract class Type implements Cloneable {
                 if (t1 == PrimitiveType.JSON || t2 == PrimitiveType.JSON) {
                     continue;
                 }
+                if (t1 == PrimitiveType.FUNCTION || t2 == PrimitiveType.FUNCTION) {
+                    continue;
+                }
                 Preconditions.checkNotNull(compatibilityMatrix[i][j]);
             }
         }
@@ -636,6 +641,8 @@ public abstract class Type implements Cloneable {
                 return Type.DECIMAL128;
             case JSON:
                 return Type.JSON;
+            case FUNCTION:
+                return Type.FUNCTION;
             default:
                 return null;
         }
@@ -643,7 +650,7 @@ public abstract class Type implements Cloneable {
 
     public boolean canApplyToNumeric() {
         // TODO(mofei) support sum, avg for JSON
-        return !isOnlyMetricType() && !isJsonType();
+        return !isOnlyMetricType() && !isJsonType() && !isFunctionType();
     }
 
     public boolean canJoinOn() {
@@ -705,6 +712,10 @@ public abstract class Type implements Cloneable {
 
     public boolean isJsonType() {
         return isScalarType(PrimitiveType.JSON);
+    }
+
+    public boolean isFunctionType() {
+        return isScalarType(PrimitiveType.FUNCTION);
     }
 
     public boolean isPercentile() {
@@ -1241,6 +1252,8 @@ public abstract class Type implements Cloneable {
             case DECIMAL64:
             case DECIMAL128:
                 return this;
+            case FUNCTION:
+                return FUNCTION;
             default:
                 return INVALID;
 

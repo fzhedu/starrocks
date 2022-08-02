@@ -33,6 +33,7 @@ using Buffer = std::vector<T>;
 class ArrayColumn;
 class NullableColumn;
 class ConstColumn;
+class FunctionColumn;
 
 template <typename T>
 class FixedLengthColumn;

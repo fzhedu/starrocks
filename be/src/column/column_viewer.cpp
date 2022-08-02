@@ -22,7 +22,7 @@ static inline size_t null_mask(const ColumnPtr& column) {
 template <PrimitiveType Type>
 ColumnViewer<Type>::ColumnViewer(const ColumnPtr& column)
         : _not_const_mask(not_const_mask(column)), _null_mask(null_mask(column)) {
-    if (column->only_null()) {
+    if (column->only_null() || column->is_function()) {
         _null_column = ColumnHelper::one_size_null_column;
         _column = RunTimeColumnType<Type>::create();
         _column->append_default();
@@ -38,9 +38,10 @@ ColumnViewer<Type>::ColumnViewer(const ColumnPtr& column)
         _column = ColumnHelper::cast_to<Type>(column);
         _null_column = ColumnHelper::one_size_not_null_column;
     }
-
-    _data = _column->get_data().data();
-    _null_data = _null_column->get_data().data();
+    if(!column->is_function()) {
+        _data = _column->get_data().data();
+        _null_data = _null_column->get_data().data();
+    }
 }
 
 #define M(TYPE) template class ColumnViewer<TYPE>;

@@ -195,6 +195,10 @@ public:
         return Status::OK();
     }
 
+    Status do_visit(FunctionColumn* dst) {
+        return Status::OK();
+    }
+
 private:
     const Columns& _columns;
     const Permutation& _perm;

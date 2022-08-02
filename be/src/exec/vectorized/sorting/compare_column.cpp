@@ -4,6 +4,7 @@
 #include "column/column_visitor_adapter.h"
 #include "column/const_column.h"
 #include "column/datum.h"
+#include "column/function_column.h"
 #include "column/json_column.h"
 #include "column/nullable_column.h"
 #include "column/vectorized_fwd.h"
@@ -194,6 +195,10 @@ public:
         return Status::OK();
     }
 
+    Status do_visit(const vectorized::FunctionColumn& column) {
+        return Status::OK();
+    }
+
     int get_equal_count() { return _equal_count; }
 
 private:
@@ -244,6 +249,8 @@ public:
 
     Status do_visit(const vectorized::ConstColumn& column) { return Status::NotSupported("not support"); }
     Status do_visit(const vectorized::ArrayColumn& column) { return Status::NotSupported("not support"); }
+    Status do_visit(const vectorized::FunctionColumn& column) { return Status::NotSupported("not support"); }
+
     template <typename T>
     Status do_visit(const vectorized::ObjectColumn<T>& column) {
         return Status::NotSupported("not support");

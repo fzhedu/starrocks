@@ -125,7 +125,7 @@ public class ScalarOperatorToExpr {
 
             if (node.getName() == "lambda") {
                 Expr col = new SlotRef(new TableName("lambda", "lambda"), "lambda");
-                col.setType(Type.INT);
+                col.setType(Type.TINYINT);
                 return col;
             }
 

@@ -6,6 +6,7 @@
 
 #include "column/binary_column.h"
 #include "column/decimalv3_column.h"
+#include "column/function_column.h"
 #include "column/json_column.h"
 #include "column/nullable_column.h"
 #include "column/object_column.h"
@@ -92,6 +93,8 @@ template <>
 inline constexpr bool isArithmeticPT<TYPE_PERCENTILE> = false;
 template <>
 inline constexpr bool isArithmeticPT<TYPE_JSON> = false;
+template <>
+inline constexpr bool isArithmeticPT<TYPE_FUNCTION> = false;
 
 template <PrimitiveType primitive_type>
 constexpr bool isSlicePT = false;
@@ -235,6 +238,12 @@ template <>
 struct RunTimeTypeTraits<TYPE_JSON> {
     using CppType = JsonValue*;
     using ColumnType = JsonColumn;
+};
+
+template <>
+struct RunTimeTypeTraits<TYPE_FUNCTION> {
+    using CppType = int;
+    using ColumnType = FunctionColumn;
 };
 
 template <PrimitiveType Type>

@@ -111,6 +111,12 @@ public:
         return sort_and_tie_helper(_cancel, &column, _is_asc_order, _permutation, _tie, cmp, _range, _build_tie);
     }
 
+    Status do_visit(const vectorized::FunctionColumn& column) {
+        DCHECK(false) << "not support object column sort_and_tie";
+
+        return Status::NotSupported("not support object column sort_and_tie");
+    }
+
 private:
     const bool& _cancel;
     bool _is_asc_order;
@@ -284,6 +290,10 @@ public:
         return Status::OK();
     }
 
+    Status do_visit(const vectorized::FunctionColumn& column) {
+        // noop
+        return Status::OK();
+    }
 private:
     template <class T>
     struct CompactChunkItem {

@@ -11,6 +11,7 @@
 #include "column/decimalv3_column.h"
 #include "column/fixed_length_column.h"
 #include "column/json_column.h"
+#include "column/function_column.h"
 #include "column/nullable_column.h"
 #include "column/object_column.h"
 #include "gutil/strings/substitute.h"
@@ -225,6 +226,26 @@ public:
     }
 };
 
+class FunctionColumnSerde {
+public:
+    static int64_t max_serialized_size(const vectorized::FunctionColumn& column) {
+        int64_t size = 0;
+        return size;
+    }
+
+    // Layout
+    // uint32: format_version (currently is hard-coded)
+    // uint32: number of datums
+    // datums: [size1[payload1][size2][payload2]
+    static uint8_t* serialize(const vectorized::FunctionColumn& column, uint8_t* buff) {
+        return buff;
+    }
+
+    static const uint8_t* deserialize(const uint8_t* buff, vectorized::FunctionColumn* column) {
+        return buff;
+    }
+};
+
 class NullableColumnSerde {
 public:
     static int64_t max_serialized_size(const vectorized::NullableColumn& column) {
@@ -329,6 +350,11 @@ public:
         return Status::OK();
     }
 
+    Status do_visit(const vectorized::FunctionColumn& column) {
+        _size += FunctionColumnSerde::max_serialized_size(column);
+        return Status::OK();
+    }
+
     int64_t size() const { return _size; }
 
 private:
@@ -374,6 +400,11 @@ public:
 
     Status do_visit(const vectorized::JsonColumn& column) {
         _cur = JsonColumnSerde::serialize(column, _cur);
+        return Status::OK();
+    }
+
+    Status do_visit(const vectorized::FunctionColumn& column) {
+        _cur = FunctionColumnSerde::serialize(column, _cur);
         return Status::OK();
     }
 
@@ -426,6 +457,11 @@ public:
 
     Status do_visit(vectorized::JsonColumn* column) {
         _cur = JsonColumnSerde::deserialize(_cur, column);
+        return Status::OK();
+    }
+
+    Status do_visit(vectorized::FunctionColumn* column) {
+        _cur = FunctionColumnSerde::deserialize(_cur, column);
         return Status::OK();
     }
 

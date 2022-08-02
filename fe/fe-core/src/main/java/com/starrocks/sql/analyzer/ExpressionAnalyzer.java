@@ -227,7 +227,7 @@ public class ExpressionAnalyzer {
             Type[] args = {body.getType()};
             Function fn = Expr.getBuiltinFunction("lambda", args, Function.CompareMode.IS_NONSTRICT_SUPERTYPE_OF);
             node.setFn(fn);
-            node.setType(fn.getReturnType());
+            node.setType(Type.FUNCTION);
             scope.cleanLambdaArgs();
             return null;
         }

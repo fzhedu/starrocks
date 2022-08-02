@@ -377,7 +377,7 @@ public class FunctionSet {
             new FunctionName(JSON_QUERY), new Type[] {Type.JSON, Type.VARCHAR}, Type.JSON, false);
 
     public static final Function LAMBDA_FUNC = new Function(
-            new FunctionName(LAMBDA), new Type[] {Type.INT}, Type.INT, false);
+            new FunctionName(LAMBDA), new Type[] {Type.TINYINT}, Type.FUNCTION, false);
 
     private static final Logger LOGGER = LogManager.getLogger(FunctionSet.class);
 
@@ -979,7 +979,7 @@ public class FunctionSet {
         for (Type t : Type.getSupportedTypes()) {
             // null/char/time is handled through type promotion
             // TODO: array/json/pseudo is not supported yet
-            if (t.isNull() || t.isChar() || t.isTime() || t.isArrayType() || t.isJsonType() || t.isPseudoType()) {
+            if (t.isNull() || t.isChar() || t.isTime() || t.isArrayType() || t.isJsonType() || t.isPseudoType() || t.isFunctionType()) {
                 continue;
             }
             addBuiltin(AggregateFunction.createAnalyticBuiltin(

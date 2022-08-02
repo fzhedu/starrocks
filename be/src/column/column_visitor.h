@@ -42,6 +42,7 @@ public:
     virtual Status visit(const vectorized::BitmapColumn& column);
     virtual Status visit(const vectorized::PercentileColumn& column);
     virtual Status visit(const vectorized::JsonColumn& column);
+    virtual Status visit(const vectorized::FunctionColumn& column);
     virtual Status visit(const vectorized::FixedLengthColumn<int96_t>& column);
     virtual Status visit(const vectorized::FixedLengthColumn<uint24_t>& column);
     virtual Status visit(const vectorized::FixedLengthColumn<decimal12_t>& column);

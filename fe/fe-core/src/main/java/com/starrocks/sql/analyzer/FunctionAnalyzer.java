@@ -60,6 +60,10 @@ public class FunctionAnalyzer {
             }
         }
 
+        if (fnName.getFunction().equalsIgnoreCase(FunctionSet.TRANSFORM)) {
+            functionCallExpr.setType(new ArrayType(functionCallExpr.getChild(1).getChild(1).getType()));
+        }
+
     }
 
     private static void analyzeBuiltinAggFunction(FunctionCallExpr functionCallExpr) {

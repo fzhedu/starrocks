@@ -2,6 +2,7 @@
 
 #include "exprs/vectorized/function_call_expr.h"
 
+#include "column/array_column.h"
 #include "column/chunk.h"
 #include "column/column_helper.h"
 #include "column/const_column.h"
@@ -116,46 +117,80 @@ bool VectorizedFunctionCallExpr::is_constant() const {
 }
 
 ColumnPtr VectorizedFunctionCallExpr::evaluate(starrocks::ExprContext* context, vectorized::Chunk* ptr) {
-    FunctionContext* fn_ctx = context->fn_context(_fn_context_index);
-
-    Columns args;
-    args.reserve(_children.size());
-    for (Expr* child : _children) {
-        ColumnPtr column = EVALUATE_NULL_IF_ERROR(context, child, ptr);
-        args.emplace_back(column);
-    }
-
-    if (_is_returning_random_value) {
-        if (ptr != nullptr) {
-            args.emplace_back(ColumnHelper::create_const_column<TYPE_INT>(ptr->num_rows(), ptr->num_rows()));
-        } else {
-            args.emplace_back(ColumnHelper::create_const_column<TYPE_INT>(1, 1));
-        }
-    }
-
-#ifndef NDEBUG
-    if (ptr != nullptr) {
-        size_t size = ptr->num_rows();
-        // Ensure all columns have the same size
-        for (const ColumnPtr& c : args) {
-            CHECK_EQ(size, c->size());
-        }
-    }
+    if (_fn_desc->name == "transform") {
+        // run the first arg
+        ColumnPtr column = EVALUATE_NULL_IF_ERROR(context, _children[0], ptr);
+        // take the result column (elements of array) to construct a chunk
+        auto _cur_chunk = std::make_shared<vectorized::Chunk>();
+        auto array_col = std::dynamic_pointer_cast<ArrayColumn>(column);
+        DCHECK(array_col != nullptr);
+        auto size = array_col->elements_column()->size();
+        DCHECK(size > 0);
+        auto str = column->debug_string();
+        DCHECK(str.size() > 0);
+        auto nullable_col = std::dynamic_pointer_cast<NullableColumn>(array_col->elements_column());
+        DCHECK(nullable_col != nullptr);
+        _cur_chunk->append_column(nullable_col, 111); // column ref
+#if 0
+        // use the chunk to invoke the second arg, i.e., lambda function
+        column = EVALUATE_NULL_IF_ERROR(context, _children[1], _cur_chunk.get());
+#else
+        column = EVALUATE_NULL_IF_ERROR(context, _children[1], _cur_chunk.get());
+        auto function_col = std::dynamic_pointer_cast<FunctionColumn>(column);
+        column = function_col->evaluate(context,_cur_chunk.get());
 #endif
+        auto str1 = column->debug_string() + " name: " + column->get_name();
+        DCHECK(str1.size() > 0);
+        nullable_col = std::make_shared<vectorized::NullableColumn>(column, nullable_col->null_column());
+        str = nullable_col->debug_string() + " name: " + nullable_col->get_name();
+        DCHECK(str.size() > 0);
 
-    ColumnPtr result;
-    if (_fn_desc->exception_safe) {
-        result = _fn_desc->scalar_function(fn_ctx, args);
+        // updated elements with offsets to construct the result.
+        return std::make_shared<ArrayColumn>(nullable_col, array_col->offsets_column());
+    } else if (_fn_desc->name == "lambda") {
+        return std::make_shared<FunctionColumn>(_children[0]);
     } else {
-        SCOPED_SET_CATCHED(false);
-        result = _fn_desc->scalar_function(fn_ctx, args);
-    }
+        FunctionContext* fn_ctx = context->fn_context(_fn_context_index);
 
-    // For no args function call (pi, e)
-    if (result->is_constant() && ptr != nullptr) {
-        result->resize(ptr->num_rows());
+        Columns args;
+        args.reserve(_children.size());
+        for (Expr* child : _children) {
+            ColumnPtr column = EVALUATE_NULL_IF_ERROR(context, child, ptr);
+            args.emplace_back(column);
+        }
+
+        if (_is_returning_random_value) {
+            if (ptr != nullptr) {
+                args.emplace_back(ColumnHelper::create_const_column<TYPE_INT>(ptr->num_rows(), ptr->num_rows()));
+            } else {
+                args.emplace_back(ColumnHelper::create_const_column<TYPE_INT>(1, 1));
+            }
+        }
+
+    #ifndef NDEBUG
+        if (ptr != nullptr) {
+            size_t size = ptr->num_rows();
+            // Ensure all columns have the same size
+            for (const ColumnPtr& c : args) {
+                CHECK_EQ(size, c->size());
+            }
+        }
+    #endif
+
+        ColumnPtr result;
+        if (_fn_desc->exception_safe) {
+            result = _fn_desc->scalar_function(fn_ctx, args);
+        } else {
+            SCOPED_SET_CATCHED(false);
+            result = _fn_desc->scalar_function(fn_ctx, args);
+        }
+
+        // For no args function call (pi, e)
+        if (result->is_constant() && ptr != nullptr) {
+            result->resize(ptr->num_rows());
+        }
+        return result;
     }
-    return result;
 }
 
 } // namespace starrocks::vectorized

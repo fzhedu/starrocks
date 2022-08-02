@@ -10,6 +10,8 @@
 #include "column/datum.h"
 #include "column/fixed_length_column_base.h"
 #include "column/json_column.h"
+#include "column/function_column.h"
+
 #include "column/nullable_column.h"
 #include "column/vectorized_fwd.h"
 #include "exec/vectorized/sorting/merge.h"

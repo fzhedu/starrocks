@@ -62,6 +62,7 @@ static std::unique_ptr<Converter> get_converter(const TypeDescriptor& t) {
     case TYPE_TIME:
     case TYPE_OBJECT:
     case TYPE_JSON:
+    case TYPE_FUNCTION:
         break;
     }
     return nullptr;
