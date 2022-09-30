@@ -660,7 +660,10 @@ size_t BitmapValue::getSizeInBytes() const {
 
 // Serialize the bitmap value to dst, which should be large enough.
 // Client should call `getSizeInBytes` first to get the serialized size.
-void BitmapValue::write(char* dst) const {
+void BitmapValue::write(char* dst) {
+    _watch.reset();
+    _watch.start();
+
     switch (_type) {
     case EMPTY:
         *dst = BitmapTypeCode::EMPTY;
@@ -678,7 +681,6 @@ void BitmapValue::write(char* dst) const {
         _bitmap->write(dst, config::bitmap_serialize_version);
         break;
     case SET:
-
         *dst = BitmapTypeCode::SET;
         dst += 1;
         uint32_t size = _set->size();
@@ -689,6 +691,11 @@ void BitmapValue::write(char* dst) const {
             dst += sizeof(uint64_t);
         }
     }
+    double elapsed = _watch.elapsed_time() / 1000000.0;
+    if (elapsed > 1) {
+        LOG(WARNING) << "Serializing bitmap " << _type << " costs time = " << elapsed;
+    }
+    _watch.reset();
 }
 
 // Deserialize a bitmap value from `src`.
@@ -698,7 +705,8 @@ bool BitmapValue::deserialize(const char* src) {
         _type = EMPTY;
         return true;
     }
-
+    _watch.reset();
+    _watch.start();
     DCHECK(*src >= BitmapTypeCode::EMPTY && *src <= BitmapTypeCode::BITMAP64_SERIV2);
     switch (*src) {
     case BitmapTypeCode::EMPTY:
@@ -740,6 +748,11 @@ bool BitmapValue::deserialize(const char* src) {
     default:
         return false;
     }
+    double elapsed = _watch.elapsed_time() / 1000000.0;
+    if (elapsed > 1) {
+        LOG(WARNING) << "Deserializing bitmap " << _type << " costs time = " << elapsed;
+    }
+    _watch.reset();
     return true;
 }
 
@@ -816,7 +829,7 @@ void BitmapValue::to_array(std::vector<int64_t>* array) const {
     }
 }
 
-size_t BitmapValue::serialize(uint8_t* dst) const {
+size_t BitmapValue::serialize(uint8_t* dst) {
     write(reinterpret_cast<char*>(dst));
     return getSizeInBytes();
 }

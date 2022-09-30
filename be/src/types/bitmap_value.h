@@ -37,6 +37,7 @@
 #include "common/logging.h"
 #include "util/coding.h"
 #include "util/phmap/phmap_fwd_decl.h"
+#include "util/stopwatch.hpp"
 
 namespace starrocks {
 
@@ -108,7 +109,7 @@ public:
 
     // Serialize the bitmap value to dst, which should be large enough.
     // Client should call `getSizeInBytes` first to get the serialized size.
-    void write(char* dst) const;
+    void write(char* dst);
 
     // Deserialize a bitmap value from `src`.
     // Return false if `src` begins with unknown type code, true otherwise.
@@ -120,7 +121,7 @@ public:
     // Append values to array
     void to_array(std::vector<int64_t>* array) const;
 
-    size_t serialize(uint8_t* dst) const;
+    size_t serialize(uint8_t* dst);
 
     uint64_t serialize_size() const { return getSizeInBytes(); }
 
@@ -146,6 +147,7 @@ private:
     std::unique_ptr<phmap::flat_hash_set<uint64_t>> _set;
     uint64_t _sv = 0; // store the single value when _type == SINGLE
     BitmapDataType _type{EMPTY};
+    MonotonicStopWatch _watch;
 };
 
 } // namespace starrocks
