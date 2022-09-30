@@ -109,7 +109,7 @@ public:
 
     // Serialize the bitmap value to dst, which should be large enough.
     // Client should call `getSizeInBytes` first to get the serialized size.
-    void write(char* dst);
+    void write(char* dst) const;
 
     // Deserialize a bitmap value from `src`.
     // Return false if `src` begins with unknown type code, true otherwise.
@@ -121,7 +121,7 @@ public:
     // Append values to array
     void to_array(std::vector<int64_t>* array) const;
 
-    size_t serialize(uint8_t* dst);
+    size_t serialize(uint8_t* dst) const;
 
     uint64_t serialize_size() const { return getSizeInBytes(); }
 
