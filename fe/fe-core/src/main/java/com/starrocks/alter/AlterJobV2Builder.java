@@ -41,6 +41,7 @@ public abstract class AlterJobV2Builder {
     protected Map<Long, List<Column>> newIndexSchema = new HashMap<>();
     protected Map<Long, Short> newIndexShortKeyCount = new HashMap<>();
     protected List<Integer> sortKeyIdxes;
+    protected List<Column> materializedColumns;
 
     public AlterJobV2Builder() {
     }
@@ -99,6 +100,11 @@ public abstract class AlterJobV2Builder {
 
     public AlterJobV2Builder withSortKeyIdxes(@Nullable List<Integer> sortKeyIdxes) {
         this.sortKeyIdxes = sortKeyIdxes;
+        return this;
+    }
+
+    public AlterJobV2Builder withMaterializedColumns(List<Column> materializedColumns) {
+        this.materializedColumns = materializedColumns;
         return this;
     }
 

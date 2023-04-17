@@ -153,6 +153,7 @@ import com.starrocks.scheduler.TaskManager;
 import com.starrocks.scheduler.TaskRun;
 import com.starrocks.scheduler.mv.MVManager;
 import com.starrocks.sql.analyzer.AnalyzerUtils;
+import com.starrocks.sql.analyzer.Field;
 import com.starrocks.sql.analyzer.SetStmtAnalyzer;
 import com.starrocks.sql.ast.AddPartitionClause;
 import com.starrocks.sql.ast.AdminCheckTabletsStmt;
@@ -2660,6 +2661,30 @@ public class LocalMetastore implements ConnectorMetadata {
         // create columns
         List<Column> baseSchema = stmt.getMvColumnItems();
         validateColumns(baseSchema);
+
+        List<Field> allFields = stmt.getQueryStatement().getQueryRelation().getScope().getRelationFields().getAllFields();
+        List<Pair<String, Column>> tableNameToMCList = Lists.newArrayList();
+        for (Field field : allFields) {
+            String tbl = "";
+            if (field.getRelationAlias() != null) {
+                tbl = field.getRelationAlias().getTbl();
+            }
+            if (tbl.equals("")) {
+                continue;
+            }
+            OlapTable olaptable = null;
+            if (db.getTable(tbl) instanceof OlapTable) {
+                olaptable = ((OlapTable) db.getTable(tbl));
+            }
+            if (olaptable == null) {
+                continue;
+            }
+            Column column = olaptable.getColumn(field.getName());
+            if (column != null && column.isMaterializedColumn()) {
+                tableNameToMCList.add(new Pair<String, Column>(tbl, column));
+            }
+        }
+
         // create partition info
         PartitionInfo partitionInfo = buildPartitionInfo(stmt);
         // create distribution info
@@ -2925,6 +2950,7 @@ public class LocalMetastore implements ConnectorMetadata {
         } finally {
             unlock();
         }
+        materializedView.setTableNameToMCList(tableNameToMCList);
         LOG.info("Successfully create materialized view [{}:{}]", mvName, materializedView.getMvId());
 
         // NOTE: The materialized view has been added to the database, and the following procedure cannot throw exception.

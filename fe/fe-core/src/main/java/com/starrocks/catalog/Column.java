@@ -107,6 +107,10 @@ public class Column implements Writable {
     // Currently, analyzed define expr is only used when creating materialized views, so the define expr in RollupJob must be analyzed.
     // In other cases, such as define expr in `MaterializedIndexMeta`, it may not be analyzed after being relayed.
     private Expr defineExpr; // use to define column in materialize view
+    @SerializedName(value = "isMaterializedColumn")
+    private boolean isMaterializedColumn;
+    @SerializedName(value = "materializedColumnExpr")
+    private Expr materializedColumnExpr;
 
     public Column() {
         this.name = "";
@@ -169,6 +173,8 @@ public class Column implements Writable {
         this.isAutoIncrement = false;
         this.comment = comment;
         this.stats = new ColumnStats();
+        this.isMaterializedColumn = false;
+        this.materializedColumnExpr = null;
     }
 
     public Column(Column column) {
@@ -311,6 +317,14 @@ public class Column implements Writable {
         return comment;
     }
 
+    public void setIsMaterializedColumn() {
+        this.isMaterializedColumn = true;
+    }
+
+    public boolean isMaterializedColumn() {
+        return isMaterializedColumn;
+    }
+
     public int getOlapColumnIndexSize() {
         PrimitiveType type = this.getPrimitiveType();
         if (type == PrimitiveType.CHAR) {
@@ -343,6 +357,10 @@ public class Column implements Writable {
     }
 
     public void checkSchemaChangeAllowed(Column other) throws DdlException {
+        if (other.isMaterializedColumn()) {
+            return;
+        }
+
         if (Strings.isNullOrEmpty(other.name)) {
             throw new DdlException("Dest column name is empty");
         }
@@ -435,6 +453,14 @@ public class Column implements Writable {
         defineExpr = expr;
     }
 
+    public Expr materializedColumnExpr() {
+        return materializedColumnExpr;
+    }
+
+    public void setMaterializedColumnExpr(Expr expr) {
+        materializedColumnExpr = expr;
+    }
+
     public SlotRef getRefColumn() {
         List<Expr> slots = new ArrayList<>();
         if (defineExpr == null) {
@@ -443,6 +469,16 @@ public class Column implements Writable {
             defineExpr.collect(SlotRef.class, slots);
             Preconditions.checkArgument(slots.size() == 1);
             return (SlotRef) slots.get(0);
+        }
+    }
+
+    public List<SlotRef> getMaterializedColumnRef() {
+        List<SlotRef> slots = new ArrayList<>();
+        if (materializedColumnExpr == null) {
+            return null;
+        } else {
+            materializedColumnExpr.collect(SlotRef.class, slots);
+            return slots;
         }
     }
 
@@ -471,6 +507,9 @@ public class Column implements Writable {
         } else if (defaultValue != null && getPrimitiveType() != PrimitiveType.HLL &&
                 getPrimitiveType() != PrimitiveType.BITMAP) {
             sb.append("DEFAULT \"").append(defaultValue).append("\" ");
+        } else if (isMaterializedColumn) {
+            sb.append("MATERIALIZED " + "( " + materializedColumnExpr.toSql() +
+                      " ) ");
         }
         sb.append("COMMENT \"").append(comment).append("\"");
 
@@ -562,6 +601,10 @@ public class Column implements Writable {
         if (isAutoIncrement) {
             sb.append("AUTO_INCREMENT ");
         }
+        if (isMaterializedColumn) {
+            sb.append("MATERIALIZED " + "( " + materializedColumnExpr.toSql() +
+                      " ) ");
+        }
         if (defaultValue != null && getPrimitiveType() != PrimitiveType.HLL &&
                 getPrimitiveType() != PrimitiveType.BITMAP) {
             sb.append("DEFAULT \"").append(defaultValue).append("\" ");
@@ -621,6 +664,13 @@ public class Column implements Writable {
             return false;
         }
         if (this.getScale() != other.getScale()) {
+            return false;
+        }
+        if (this.isMaterializedColumn() && !other.isMaterializedColumn()) {
+            return false;
+        }
+        if (this.isMaterializedColumn() &&
+                !this.materializedColumnExpr().equals(other.materializedColumnExpr())) {
             return false;
         }
 

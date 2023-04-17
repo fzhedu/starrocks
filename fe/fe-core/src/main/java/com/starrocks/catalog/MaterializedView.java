@@ -305,6 +305,10 @@ public class MaterializedView extends OlapTable implements GsonPostProcessable {
     // Maintenance plan for this MV
     private transient ExecPlan maintenancePlan;
 
+    // Maintenance table materialized column map for this MV
+    @SerializedName(value = "tableNameToMCList")
+    private List<Pair<String, Column>> tableNameToMCList = Lists.newArrayList();
+
     public static class MvRewriteContext {
         // mv's logical plan
         private final OptExpression logicalPlan;
@@ -437,6 +441,14 @@ public class MaterializedView extends OlapTable implements GsonPostProcessable {
 
     public Set<String> getUpdatedPartitionNamesOfTable(Table base) {
         return getUpdatedPartitionNamesOfTable(base, false);
+    }
+
+    public void setTableNameToMCList(List<Pair<String, Column>> tableNameToMCList) {
+        this.tableNameToMCList = tableNameToMCList;
+    }
+
+    public List<Pair<String, Column>> tableNameToMCList() {
+        return this.tableNameToMCList;
     }
 
     public static SlotRef getPartitionSlotRef(MaterializedView materializedView) {

@@ -16,6 +16,7 @@ package com.starrocks.sql.analyzer;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.starrocks.analysis.Expr;
 import com.starrocks.analysis.NullLiteral;
 import com.starrocks.analysis.SlotRef;
@@ -25,6 +26,11 @@ import com.starrocks.catalog.Column;
 import com.starrocks.catalog.MaterializedView;
 import com.starrocks.catalog.Table;
 import com.starrocks.qe.ConnectContext;
+import com.starrocks.sql.analyzer.Field;
+import com.starrocks.sql.analyzer.RelationFields;
+import com.starrocks.sql.analyzer.RelationId;
+import com.starrocks.sql.analyzer.Scope;
+import com.starrocks.sql.analyzer.SelectAnalyzer.RewriteAliasVisitor;
 import com.starrocks.sql.ast.ColumnAssignment;
 import com.starrocks.sql.ast.DefaultValueExpr;
 import com.starrocks.sql.ast.JoinRelation;
@@ -74,12 +80,17 @@ public class UpdateAnalyzer {
             }
         }
         SelectList selectList = new SelectList();
+        Map<Column, SelectListItem>  mcToItem = Maps.newHashMap();
         for (Column col : table.getBaseSchema()) {
             SelectListItem item;
             ColumnAssignment assign = assignmentByColName.get(col.getName().toLowerCase());
             if (assign != null) {
                 if (col.isKey()) {
                     throw new SemanticException("primary key column cannot be updated: " + col.getName());
+                }
+
+                if (col.isMaterializedColumn()) {
+                    throw new SemanticException("materialized column cannot be updated: " + col.getName());
                 }
 
                 if (assign.getExpr() instanceof DefaultValueExpr) {
@@ -92,10 +103,64 @@ public class UpdateAnalyzer {
                 }
 
                 item = new SelectListItem(assign.getExpr(), col.getName());
+            } else if (col.isMaterializedColumn()) {
+                Expr expr = col.materializedColumnExpr().clone();
+                item = new SelectListItem(expr, col.getName());
+                mcToItem.put(col, item);
             } else {
                 item = new SelectListItem(new SlotRef(tableName, col.getName()), col.getName());
             }
             selectList.addItem(item);
+        }
+
+        /*
+         * The Substitution here is needed because the materialized column
+         * needed to be re-calculated by the 'new value' of the ref column,
+         * which is the specified expression in UPDATE statment.
+         */
+        for (Column column : table.getBaseSchema()) {
+            if (!column.isMaterializedColumn()) {
+                continue;
+            }
+
+            SelectListItem item = mcToItem.get(column);
+            Expr orginExpr = item.getExpr();
+
+            List<Expr> outputExprs = Lists.newArrayList();
+            for (Column col : table.getBaseSchema()) {
+                if (assignmentByColName.get(col.getName()) == null) {
+                    outputExprs.add(null);
+                } else {
+                    outputExprs.add(assignmentByColName.get(col.getName()).getExpr());
+                }
+            }
+
+            // sourceScope must be set null tableName for its Field in RelationFields
+            // because we hope slotRef can not be resolved in sourceScope but can be
+            // resolved in outputScope to force to replace the node using outputExprs.
+            Scope sourceScope = new Scope(RelationId.anonymous(), 
+                                    new RelationFields(table.getBaseSchema().stream().map(col ->
+                                        new Field(col.getName(), col.getType(), null, null))
+                                            .collect(Collectors.toList())));
+
+            // outputScope should be resolved for the column with assign expr in update statement.
+            List<Field> fields = Lists.newArrayList();
+            for (Column col : table.getBaseSchema()) {
+                if (assignmentByColName.get(col.getName()) == null) {
+                    fields.add(new Field(col.getName(), col.getType(), null, null));
+                } else {
+                    fields.add(new Field(col.getName(), col.getType(), tableName, null));
+                }
+            }
+            Scope outputScope = new Scope(RelationId.anonymous(), new RelationFields(fields));
+
+            RewriteAliasVisitor visitor =
+                                new RewriteAliasVisitor(sourceScope, outputScope,
+                                    outputExprs, session);
+
+            Expr expr = orginExpr.accept(visitor, null);
+
+            item.setExpr(expr);
         }
 
         Relation relation = new TableRelation(tableName);

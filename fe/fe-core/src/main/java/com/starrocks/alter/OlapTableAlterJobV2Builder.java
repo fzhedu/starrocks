@@ -59,6 +59,7 @@ public class OlapTableAlterJobV2Builder extends AlterJobV2Builder {
         schemaChangeJob.setStartTime(startTime);
         schemaChangeJob.setStorageFormat(newStorageFormat);
         schemaChangeJob.setSortKeyIdxes(sortKeyIdxes);
+        schemaChangeJob.setMaterializedColumns(materializedColumns);
         /*
          * Create schema change job
          * 1. For each index which has been changed, create a SHADOW index, and save the mapping of origin index to SHADOW index.
