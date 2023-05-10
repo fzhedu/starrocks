@@ -39,7 +39,7 @@ duplicate key(c0)
 The array type has the following restrictions:
 
 * The array columns can be only defined in duplicate tables
-* Array columns cannot be used as key columns (may be supported later)
+* Array columns cannot be used as key columns (maybe supported later)
 * Array columns cannot be used as distribution columns
 * Array columns cannot be used as partition columns
 
